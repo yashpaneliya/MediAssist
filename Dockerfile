@@ -17,4 +17,4 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY . .
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${WORKERS:-2}"]
+CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 8000 --workers ${WORKERS:-2}"]
