@@ -7,10 +7,12 @@ from utils.logger import logger
 router = APIRouter()
 
 @router.post("/run", response_model=AgentResponse)
-async def run_agent(request: Request, payload: AgentRequest):
+async def run_agent(request: Request):
     try:
-        logger.info(f"Received agent request with session_id={payload.session_id}")
-        response = await run_agent_logic(payload)
+        logger.info(f"Received agent request with session_id={request.session_id}")
+        response = await run_agent_logic(request)
+
+        logger.info(f"Agent response for session_id={response.session_id}: {response.response}")
 
         if response.status_code >= 400:
             raise HTTPException(status_code=response.status_code, detail=response.error)
