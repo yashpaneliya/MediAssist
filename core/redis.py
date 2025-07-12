@@ -43,6 +43,8 @@ class RedisCache:
                     encoding="utf-8",
                     decode_responses=True,
                 )
+                pong = await self._client.ping()
+                logger.info(f"Redis connection established: {pong}")
                 logger.info("Redis client initialized in RedisCache.")
             except RedisError as e:
                 logger.error(f"Failed to initialize Redis: {e}")
@@ -195,3 +197,11 @@ class RedisCache:
         except Exception as e:
             logger.error(f"Redis JSON set error for key {key}: {e}")
             return False
+
+    async def close(self):
+        try:
+            if self._client:
+                logger.info("Closing Redis client connection.")
+                await self._client.close()
+        except RedisError as e:
+            logger.error(f"Redis close error: {e}")

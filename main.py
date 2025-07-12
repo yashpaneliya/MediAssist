@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
         raise
 
     yield  # Application runs here
-
+    await RedisCache().close()
     logger.info("🛑 Shutting down application...")
 
 app = FastAPI(
@@ -63,4 +63,4 @@ app.include_router(
 
 if __name__=="__main__":
     import uvicorn
-    uvicorn.run(app=app, port=8000 , lifespan=lifespan)
+    uvicorn.run(app=app, port=8000)

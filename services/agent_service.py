@@ -6,12 +6,9 @@ from models.api_models import AgentRequest, AgentResponse
 
 from utils.logger import logger
 
-
-  # Assuming RedisCache is initialized in app state
-redis = RedisCache().get_client()
 async def run_agent_logic(payload: AgentRequest) -> AgentResponse:
     logger.debug(f"Running agent with query='{payload.query}', session_id='{payload.session_id}'")
-
+    redis = RedisCache()
     
     try:
         session_id = payload.session_id or str(uuid.uuid4())
@@ -19,7 +16,7 @@ async def run_agent_logic(payload: AgentRequest) -> AgentResponse:
         # TODO: fetch history from cache if required based on session_id
         stateKey = redis.get_stateKey(session_id)
         chat_history = ""
-        if redis.exists(stateKey):
+        if await redis.exists(stateKey):
             logger.debug(f"Fetching chat history for session_id={session_id}")
             chat_history = await redis.get(stateKey)
             state = json.loads(chat_history)

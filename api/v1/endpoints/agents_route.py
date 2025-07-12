@@ -7,7 +7,7 @@ from utils.logger import logger
 router = APIRouter()
 
 @router.post("/run", response_model=AgentResponse)
-async def run_agent(request: Request):
+async def run_agent(request: AgentRequest):
     try:
         logger.info(f"Received agent request with session_id={request.session_id}")
         response = await run_agent_logic(request)

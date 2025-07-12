@@ -17,13 +17,13 @@ from agents.Utils.common_methods import extract_image_info
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
     finalResponse : str = ""
-    intent : str
+    agent_intent : str
 
 # Agents Method 
 
 
-def intentAgent(state : AgentState ) :
-    last_msg = state.messages[-1]['content'] 
+def intentAgent(state: AgentState):
+    last_msg = state['messages'][-1]['content'] 
     agentIntent = IntentIdentifier(state)
     intent_response = agentIntent.get_intent_agent_response(last_msg)[1]
     pattern = r'\{.*?\}'
@@ -37,7 +37,7 @@ def intentAgent(state : AgentState ) :
     
     
 def disease_agent(state: AgentState):
-    query = state.messages[-1]['content']
+    query = state['messages'][-1]['content']
     diseaseAgent = MedicalChatbot(state)
     disease_response = diseaseAgent.process_user_message(query)[0]
     # state["messages"] = AIMessage(content=disease_response)
@@ -45,7 +45,7 @@ def disease_agent(state: AgentState):
 
 
 def drugs_agent(state: AgentState):
-    query = state.messages[-1]['content']
+    query = state['messages'][-1]['content']
     image_info = extract_image_info(query)
     drugsAgent = MedicalAgent()
     drugs_response = drugsAgent.get_responder_output(isImage=image_info.get("isImage"), image_source=image_info.get("imageSource"), query=query)
@@ -53,9 +53,9 @@ def drugs_agent(state: AgentState):
     return {**state, "finalResponse": drugs_response}
 
 def responder_agent(state: AgentState):
-    query = state.messages[-1]['content']
-    intent = state.intent
-    finalResponse = state.finalResponse
+    query = state['messages'][-1]['content']
+    intent = state['agent_intent']
+    finalResponse = state['finalResponse']
     responder_agent = ResponsderAgent(state)
     responder_agent_response = responder_agent.get_responder_output(user_query=query, intent=intent , final_response=finalResponse)
     state["messages"] = {"role" : "Assistant" , "content" : responder_agent_response}
