@@ -32,7 +32,7 @@ class SymptomData:
 def get_sambanova_response(messages, model="Meta-Llama-3.3-70B-Instruct", system_prompt=None):
     """Helper function to get response from SambaNova API"""
     client = OpenAI(
-        api_key="",
+        api_key="f9c890ca-64fa-4e37-ab62-fd9a1e6c4de6",
         base_url="https://api.sambanova.ai/v1",
     )
     

@@ -7,6 +7,7 @@ import asyncio
 from agents.Drug_Analysis.utils import MedicalRAGIndexer
 from agents.Utils.common_methods import get_sambanova_response
 from openai import OpenAI
+from langchain_core.messages import HumanMessage
 
 
 class ConversationState(Enum):
@@ -32,7 +33,7 @@ class SymptomData:
     additional_context: Dict[str, Any]
 
 class MedicalChatbot:
-    def __init__(self, rag_indexer_path: str = "MediAssist/agents/Drug_Analysis/medical_rag_indexes"):
+    def __init__(self, rag_indexer_path: str = "agents/Drug_Analysis/medical_rag_indexes" , chat_history = json.dumps({})):
         """
         Initialize the medical chatbot with SambaNova API and RAG system
         
@@ -49,8 +50,22 @@ class MedicalChatbot:
             print("Please ensure indexes are created using the utils.py script first")
             raise
         
+        print(f"This is the chatHistory in MedicalChatbot {chat_history}")
         # Conversation management
+        if(isinstance(chat_history,str)):
+            self.chat_history = json.loads(chat_history)['messages']
+        else:
+            self.chat_history = chat_history['messages']
+        
         self.conversation_history: List[ChatMessage] = []
+        for message in self.chat_history:
+            if isinstance(message,HumanMessage):
+                role = 'user'
+            else:
+                role = 'assistant'
+            self.conversation_history.append(ChatMessage(role=role, content=message.content))
+            
+        
         self.current_state = ConversationState.INITIAL
         self.symptom_data = SymptomData([], [], {}, {}, {})
         self.disease_candidates: List[Dict] = []

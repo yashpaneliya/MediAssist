@@ -2,11 +2,12 @@
 from typing import Annotated, TypedDict
 
 from agents.Drug_Analysis.chatbot import get_sambanova_response
+from agents.Utils.common_methods import get_chatHistory_from_state
 
 
 class ResponsderAgent:
-    def __init__(self , chat_history: str = ""):
-        self.chat_history = chat_history
+    def __init__(self , chat_history):
+        self.chat_history = get_chatHistory_from_state(chat_history)
 
     def get_responder_systemPrompt(self,user_query , intent, final_response: str = ""):
         prompt = f"""# Medical Responder Agent Prompt for Meta-Llama-3.3-70B-Instruct
@@ -306,7 +307,7 @@ Before finalizing each medical response, ensure:
             str: The generated response.
         """
         messages = []
-        system_prompt = self.get_responder_systemPrompt(user_query=user_query , intent=intent, chat_history=self.chat_history, final_response=final_response)
+        system_prompt = self.get_responder_systemPrompt(user_query=user_query , intent=intent,final_response=final_response)
         messages.append({"role": "system", "content": system_prompt})
         
         # Simulating the response generation process

@@ -1,7 +1,9 @@
 import base64
+import json
 import re
 from openai import OpenAI
 import requests
+from langchain_core.messages import HumanMessage
 
 def get_sambanova_response(messages, model="Meta-Llama-3.3-70B-Instruct", temperature=0.1, top_p=0.1):
     """
@@ -17,7 +19,7 @@ def get_sambanova_response(messages, model="Meta-Llama-3.3-70B-Instruct", temper
         Response content as string
     """
     client = OpenAI(
-        api_key="",
+        api_key="f9c890ca-64fa-4e37-ab62-fd9a1e6c4de6",
         base_url="https://api.sambanova.ai/v1",
     )
     
@@ -90,3 +92,23 @@ def extract_image_info(query: str) -> dict:
         result["imageSource"] = local_match.group(0)
 
     return result
+
+def get_chatHistory_from_state(state):
+    chat_history = {}
+    for k,v in state.items():
+        chat_history[k] = v
+    message_list = []
+    for message in chat_history['messages'] :
+        if (isinstance(message,HumanMessage)):
+            role = 'user'
+            content = message.content
+        elif (isinstance(message,dict)):
+            role = message['role']
+            content = message['content']
+        else:
+            role = 'assistant'
+            content = message.content
+        message_list.append({'role' : role , 'content' : content})
+    chat_history['messages'] = message_list
+    chat_history_str = json.dumps(chat_history)
+    return chat_history_str

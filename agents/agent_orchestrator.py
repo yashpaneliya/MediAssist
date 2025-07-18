@@ -3,12 +3,13 @@
 import json
 import re
 from typing import Annotated, TypedDict
+from fastapi import logger
 from langchain_core.messages import HumanMessage, AIMessage , AnyMessage
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, END
 from pydantic import BaseModel
-
-from agents.Drug_Analysis.chatbot import MedicalChatbot
+from utils.logger import logger
+from agents.Drug_Analysis.main import MedicalChatbot
 from agents.Intent_Analysis.intent_analysis import IntentIdentifier
 from agents.Medical_Analysis.Medical_rag import MedicalAgent
 from agents.ResponderAgent.responderAgent import ResponsderAgent
@@ -16,36 +17,40 @@ from agents.Utils.common_methods import extract_image_info
 
 class AgentState(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
-    finalResponse : str = ""
-    agent_intent : str
+    finalResponse : str = "NOne"
+    agent_intent : str = "NOne"
 
 # Agents Method 
 
 
 def intentAgent(state: AgentState):
-    last_msg = state['messages'][-1]['content'] 
+    print(f"IntentAgent Initial state {state}")
+    last_msg = state['messages'][-1].content
+    print(f"Last message for the Intent agent {last_msg}")
     agentIntent = IntentIdentifier(state)
     intent_response = agentIntent.get_intent_agent_response(last_msg)[1]
+    logger.info(f"Intent agent Response : {intent_response}")
     pattern = r'\{.*?\}'
     match = re.search(pattern,intent_response, re.DOTALL)
     if match:
         json_str = match.group()
         intent_result = json.loads(json_str)
-
+    logger.info(f"Final result of intent {intent_result}")
     intent = intent_result['actual_tag']
-    return {**state , "intent" : intent}
+    return {**state , "agent_intent" : intent}
     
     
 def disease_agent(state: AgentState):
-    query = state['messages'][-1]['content']
-    diseaseAgent = MedicalChatbot(state)
+    query = state['messages'][-1].content
+    diseaseAgent = MedicalChatbot(chat_history=state)
     disease_response = diseaseAgent.process_user_message(query)[0]
+    logger.info(f"Disease Analysis Agent Response {disease_response}")
     # state["messages"] = AIMessage(content=disease_response)
     return {**state, "finalResponse": disease_response}
 
 
 def drugs_agent(state: AgentState):
-    query = state['messages'][-1]['content']
+    query = state['messages'][-1].content
     image_info = extract_image_info(query)
     drugsAgent = MedicalAgent()
     drugs_response = drugsAgent.get_responder_output(isImage=image_info.get("isImage"), image_source=image_info.get("imageSource"), query=query)
@@ -53,16 +58,17 @@ def drugs_agent(state: AgentState):
     return {**state, "finalResponse": drugs_response}
 
 def responder_agent(state: AgentState):
-    query = state['messages'][-1]['content']
+    query = state['messages'][-1].content
     intent = state['agent_intent']
     finalResponse = state['finalResponse']
-    responder_agent = ResponsderAgent(state)
+    responder_agent = ResponsderAgent(chat_history=state)
     responder_agent_response = responder_agent.get_responder_output(user_query=query, intent=intent , final_response=finalResponse)
-    state["messages"] = {"role" : "Assistant" , "content" : responder_agent_response}
+    logger.info(f"Following is the response of responder agent {responder_agent_response}")
+    state["messages"].append({"role" : "assistant" , "content" : responder_agent_response})
     return {**state , "finalResponse" : responder_agent_response}
 
 def intent_condition(state : AgentState):
-    return state["intent"]
+    return state["agent_intent"]
 
 def graph_compilation():
     graph = StateGraph(AgentState)

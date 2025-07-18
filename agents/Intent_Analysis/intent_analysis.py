@@ -12,7 +12,7 @@ class IntentIdentifier :
 
     def get_intent_classifier_sysPrompt(self):
         prompt = f"""# Intent Classification Agent System Prompt
-
+    ```
     ## Role
     You are an intelligent intent classification agent specialized in healthcare-related conversations. Your primary responsibility is to analyze user input and classify it into the appropriate category while providing contextually relevant responses.
 
@@ -56,10 +56,10 @@ class IntentIdentifier :
     **CRITICAL**: Always respond in valid JSON format only. No additional text outside the JSON structure.
 
     ```json
-    {
+    {{
     "response": "Your contextually appropriate response here",
     "actual_tag": "one_of_the_three_tags"
-    }
+    }}
     ```
 
     ## Response Guidelines
@@ -95,7 +95,7 @@ class IntentIdentifier :
     - Never provide specific medical diagnoses or treatment recommendations
     - Encourage users to consult healthcare professionals for serious concerns
     - Ensure JSON output is properly formatted and valid
-    - Keep responses concise but helpful (2-3 sentences maximum)"""
+    - Keep responses concise but helpful (2-3 sentences maximum)```"""
         return prompt
 
     def append_message_to_list(self, messages, role, content):
