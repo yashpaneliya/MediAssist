@@ -1,18 +1,21 @@
 # 🚀 MediAssist API
 
----
+An intelligent healthcare assistant here to help answer your health-related questions and provide general information.
+
 
 ## 🛠️ Features
 
----
+- **Health Queries**: Ask questions about symptoms, medications, and general health topics.
+- **Medication Information**: Get details about various medications, including uses, side effects, and interactions.
+- **Symptom Checker**: Describe your symptoms and get potential causes and advice.
+- **Health Tips**: Receive general health tips and advice for maintaining a healthy lifestyle.
+
 
 ## 📦 Requirements
 
 - Python 3.11+
 - Redis (running locally or remotely)
 - `pip` / `venv` / Docker (recommended)
-
----
 
 ## 🚀 Local Development
 
@@ -38,11 +41,13 @@ API_VERSION=v1
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_CACHE_TTL=3600
+OPENAI_API_KEY=<provider api key>
+OPENAI_API_BASE=<base url of your provider>
 ```
 
 ### 4. Run the application
 ```bash
-uvicorn app.main:app --reload
+uvicorn main:app --reload
 ```
 
 ### 5. Access the API
