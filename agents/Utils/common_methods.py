@@ -5,6 +5,8 @@ from openai import OpenAI
 import requests
 from langchain_core.messages import HumanMessage
 
+from core.config import get_settings
+settings = get_settings()
 def get_sambanova_response(messages, model="Meta-Llama-3.3-70B-Instruct", temperature=0.1, top_p=0.1):
     """
     Get response from SambaNova API
@@ -19,8 +21,8 @@ def get_sambanova_response(messages, model="Meta-Llama-3.3-70B-Instruct", temper
         Response content as string
     """
     client = OpenAI(
-        api_key="f9c890ca-64fa-4e37-ab62-fd9a1e6c4de6",
-        base_url="https://api.sambanova.ai/v1",
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.OPENAI_API_BASE,
     )
     
     response = client.chat.completions.create(

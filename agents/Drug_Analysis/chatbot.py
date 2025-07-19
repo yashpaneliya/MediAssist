@@ -4,8 +4,11 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from enum import Enum
 import asyncio
+from core.config import get_settings
 from utils import *
 from openai import OpenAI
+
+settings = get_settings()
 
 class ConversationState(Enum):
     INITIAL = "initial"
@@ -32,8 +35,8 @@ class SymptomData:
 def get_sambanova_response(messages, model="Meta-Llama-3.3-70B-Instruct", system_prompt=None):
     """Helper function to get response from SambaNova API"""
     client = OpenAI(
-        api_key="f9c890ca-64fa-4e37-ab62-fd9a1e6c4de6",
-        base_url="https://api.sambanova.ai/v1",
+        api_key=settings.OPENAI_API_KEY,
+        base_url=settings.OPENAI_API_BASE,
     )
     
     # Format messages properly for OpenAI-style API
