@@ -1,4 +1,6 @@
 import json
+from typing import Union
+from fastapi import Request
 from redis import RedisError
 from redis.asyncio import Redis
 from utils.logger import logger
@@ -14,13 +16,15 @@ class RedisCache:
     with built-in logging and error handling.
     """
     _instance = None
-    _client: Redis | None = None
+    _client: Union[Redis,None] = None
 
     def __new__(cls):
         """Ensure only one instance of RedisCache exists (Singleton pattern)."""
         if cls._instance is None:
             cls._instance = super(RedisCache, cls).__new__(cls)
         return cls._instance
+    
+    
 
     async def init(self):
         """
@@ -39,10 +43,13 @@ class RedisCache:
                     encoding="utf-8",
                     decode_responses=True,
                 )
+                pong = await self._client.ping()
+                logger.info(f"Redis connection established: {pong}")
                 logger.info("Redis client initialized in RedisCache.")
             except RedisError as e:
                 logger.error(f"Failed to initialize Redis: {e}")
                 raise RuntimeError("Redis initialization failed") from e
+            
 
     def get_client(self) -> Redis:
         """
@@ -54,8 +61,11 @@ class RedisCache:
         if self._client is None:
             raise RuntimeError("Redis client not initialized. Call `await RedisCache().init()` first.")
         return self._client
+    
+    def get_stateKey(self , session_id: str) -> str:
+        return f"state:{session_id}"
 
-    async def get(self, key: str) -> str | None:
+    async def get(self, key: str) :
         """
         Get the raw string value for a given Redis key.
 
@@ -148,7 +158,7 @@ class RedisCache:
             logger.error(f"Redis EXISTS error for key {key}: {e}")
             return False
 
-    async def get_json(self, key: str) -> dict | None:
+    async def get_json(self, key: str) :
         """
         Get a JSON-decoded object from Redis by key.
 
@@ -187,3 +197,11 @@ class RedisCache:
         except Exception as e:
             logger.error(f"Redis JSON set error for key {key}: {e}")
             return False
+
+    async def close(self):
+        try:
+            if self._client:
+                logger.info("Closing Redis client connection.")
+                await self._client.close()
+        except RedisError as e:
+            logger.error(f"Redis close error: {e}")

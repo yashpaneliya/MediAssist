@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str | None = None
     REDIS_CACHE_TTL: int = Field(default=3600)  # 1 hour default cache TTL
 
+    OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
+    OPENAI_API_BASE: str = Field(default="https://api.openai.com/v1")
+
     class Config:
         env_file = ".env"
         case_sensitive = True
