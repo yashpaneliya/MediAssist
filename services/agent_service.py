@@ -34,7 +34,11 @@ async def run_agent_logic(payload: AgentRequest) -> AgentResponse:
             "content": payload.query
         })
 
-        print(f"This is the state passed {state}")
+        if payload.img_base64:
+            state["image_data"] = payload.img_base64
+            logger.debug(f"Image data added to state for session_id={session_id}")
+
+        # print(f"This is the state passed {state}")  
 
         app_graph = graph_compilation()
         # TODO: call the agent and process the query
@@ -42,7 +46,7 @@ async def run_agent_logic(payload: AgentRequest) -> AgentResponse:
         for updated_state in app_graph.stream(state):
             pass
        
-        print(f"This is the updated state {updated_state}")
+        # print(f"This is the updated state {updated_state}")
 
 
         result = updated_state['responder_agent']['finalResponse']

@@ -20,14 +20,15 @@ class AgentState(TypedDict):
     finalResponse : str = "NOne"
     agent_intent : str = "NOne"
     intent_response: str = "None"
+    image_data: str = "None"
 # Agents Method 
 
 
 def intentAgent(state: AgentState):
-    print(f"IntentAgent Initial state {state}")
+    # logger.info(f"IntentAgent Initial state {state}")
     last_msg = state['messages'][-1].content
-    print(f"Last message for the Intent agent {last_msg}")
-    agentIntent = IntentIdentifier(state)
+    logger.info(f"Last message for the Intent agent: {last_msg}")
+    agentIntent = IntentIdentifier(state.get("messages", ""))
     intent_response = agentIntent.get_intent_agent_response(last_msg)[1]
     logger.info(f"Intent agent Response : {intent_response}")
     pattern = r'\{.*?\}'
@@ -43,7 +44,7 @@ def intentAgent(state: AgentState):
     
 def disease_agent(state: AgentState):
     query = state['messages'][-1].content
-    diseaseAgent = MedicalChatbot(chat_history=state)
+    diseaseAgent = MedicalChatbot(chat_history=state.get("messages", ""))
     disease_response = diseaseAgent.process_user_message(query)[0]
     logger.info(f"Disease Analysis Agent Response {disease_response}")
     # state["messages"] = AIMessage(content=disease_response)
@@ -52,7 +53,8 @@ def disease_agent(state: AgentState):
 
 def drugs_agent(state: AgentState):
     query = state['messages'][-1].content
-    image_info = extract_image_info(query)
+    image_data = state.get("image_data", "")
+    image_info = extract_image_info(image_data)
     drugsAgent = MedicalAgent()
     drugs_response = drugsAgent.get_responder_output(isImage=image_info.get("isImage"), image_source=image_info.get("imageSource"), query=query)
     # state["messages"] = AIMessage(content=drugs_response)

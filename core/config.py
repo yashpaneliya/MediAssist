@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
     OPENAI_API_BASE: str = Field(default="https://api.openai.com/v1")
 
+    NEO4J_URI: str
+    NEO4J_USERNAME: str
+    NEO4J_PASSWORD: str
+    DRUG_EXTRACTOR_MODEL_NAME: str = Field(default="Llama-4-Maverick-17B-128E-Instruct", env="DRUG_EXTRACTOR_MODEL_NAME")
+    DRUG_INFO_MODEL_NAME: str = Field(default="Meta-Llama-3.3-70B-Instruct", env="DRUG_INFO_MODEL_NAME")
+
     class Config:
         env_file = ".env"
         case_sensitive = True
