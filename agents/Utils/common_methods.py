@@ -65,6 +65,8 @@ def encode_image(image_source: str) -> str:
     """
     if image_source.startswith(('http://', 'https://')):
         return encode_image_from_url(image_source)
+    elif image_source.startswith('data:image'):
+        return image_source.split(',')[1]
     else:
         return encode_image_from_path(image_source)
     
@@ -93,12 +95,17 @@ def extract_image_info(query: str) -> dict:
         result["isImage"] = True
         result["imageSource"] = local_match.group(0)
 
+    if query.startswith('data:image'):
+        result["isImage"] = True
+        result["imageSource"] = query
+
     return result
 
 def get_chatHistory_from_state(state):
     chat_history = {}
     for k,v in state.items():
-        chat_history[k] = v
+        if k != "image_data":
+            chat_history[k] = v
     message_list = []
     for message in chat_history['messages'] :
         if (isinstance(message,HumanMessage)):

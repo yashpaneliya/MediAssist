@@ -1,14 +1,16 @@
 import json
 import pandas as pd
-from agents.Medical_Analysis.Medical_config import DRUG_EXTRACTOR_MODEL_NAME, DRUG_INFO_MODEL_NAME, NEO4j_PASSWORD, NEO4j_URI, NEO4j_USERNAME
 from agents.Utils.common_methods import encode_image, get_sambanova_response
 from neo4j import GraphDatabase
 from itertools import combinations
+from core.config import get_settings
+from utils.logger import logger
 
+settings = get_settings()
 
 class MedicalAgent :
     def __init__(self):
-        self.driver = GraphDatabase.driver( NEO4j_URI , auth=(NEO4j_USERNAME , NEO4j_PASSWORD ) )
+        self.driver = GraphDatabase.driver( settings.NEO4J_URI , auth=(settings.NEO4J_USERNAME , settings.NEO4J_PASSWORD ) )
 
 
     def get_drug_info(self, tx, drug_names):
@@ -119,59 +121,56 @@ class MedicalAgent :
     
 
     def get_drugListExtractor_systemPrompt(self):
-        prompt = """# Drug Name Extraction System Prompt
+        prompt = """You are a drug name extraction system. Extract all drug names from the provided content and return ONLY a JSON response.
 
-    ```
-    You are a medical AI assistant specialized in extracting drug names from text and images.
+Extract:
+- Generic drug names (acetaminophen, ibuprofen)
+- Brand names (Tylenol, Advil)
+- Prescription and OTC medications
+- Supplements with specific drug names
 
-    Your task is to identify and extract all drug names (generic and brand names) mentioned in the provided content.
+Do NOT extract:
+- General terms (medication, pills, tablets)
+- Dosage information
+- Medical conditions
+- Non-drug substances
 
-    INSTRUCTIONS:
-    1. Extract ALL drug names, including:
-    - Generic drug names (e.g., acetaminophen, ibuprofen)
-    - Brand names (e.g., Tylenol, Advil)
-    - Prescription medications
-    - Over-the-counter medications
-    - Supplements and vitamins with specific drug names
+JSON format:
+json
+{
+    "drug_names": ["drug1", "drug2"],
+    "confidence": [0.95, 0.87]
+}
 
-    2. DO NOT include:
-    - General terms like "medication", "pills", "tablets"
-    - Dosage information (e.g., "500mg")
-    - Medical conditions or symptoms
-    - Non-drug substances unless they are medications
+If no drugs found:
+json
+{
+    "drug_names": [],
+    "confidence": []
+}
 
-    3. Return your response in the following JSON format ONLY:
-    {
-        "drug_names": ["drug1", "drug2", "drug3"],
-        "confidence": [0.95, 0.87, 0.92]
-    }
+Confidence scale: 1.0 (certain) to 0.6 (minimum threshold).
 
-    4. If no drug names are found, return:
-    {
-        "drug_names": [],
-        "confidence": []
-    }
-
-    5. Confidence scores should be between 0.0 and 1.0, where:
-    - 1.0 = Absolutely certain it's a drug name
-    - 0.8-0.9 = Very confident
-    - 0.6-0.7 = Moderately confident
-    - Below 0.6 = Low confidence (consider excluding)
-
-    IMPORTANT: Return ONLY the JSON response, no additional text or explanations.
-    ```"""
+CRITICAL: Return ONLY the JSON. No explanations, no additional text, no reasoning. Just the JSON object.
+"""
         return prompt
     
     def complete_graphrag_search(self, extracted_drug_names_list: list[str]):
         drug_list = extracted_drug_names_list
+        if len(drug_list) == 1:
+            drug_list.append(drug_list[0])
         pairs = list(combinations(drug_list, 2))
-
-        with self.driver.session() as session:
-            drug_infos = session.read_transaction(self.get_drug_info, drug_list)
-            interaction_infos = session.read_transaction(self.get_interactions, pairs)
-
-        return drug_infos, interaction_infos
-
+        logger.info(f"Pairs: {pairs}")
+        try:
+            with self.driver.session() as session:
+                drug_infos = session.read_transaction(lambda tx: self.get_drug_info(tx, drug_list))
+                interaction_infos = session.read_transaction(lambda tx: self.get_interactions(tx, pairs))
+            logger.info(f"Drug Infos: {drug_infos}")
+            return drug_infos, interaction_infos
+        except Exception as e:
+            logger.error(f"Error during graph search: {e}")
+            return None, None
+        
     def drug_extractor(self , isImage : bool , image_source : str = None , query : str = ""):
 
         extract_messages = [
@@ -182,6 +181,7 @@ class MedicalAgent :
         ]
 
         if(isImage):
+            logger.info(f"Found image as source")
             image_base64 = encode_image(image_source)
             extract_messages += [
                 {
@@ -202,22 +202,25 @@ class MedicalAgent :
                     }
                 ]
              
-        extract_response = get_sambanova_response(extract_messages, model = DRUG_EXTRACTOR_MODEL_NAME )
+        extract_response = get_sambanova_response(extract_messages, model = settings.DRUG_EXTRACTOR_MODEL_NAME )
+        logger.info(f"Extract Response: {extract_response}")
         extracted_drug_names = json.loads(extract_response[extract_response.find("{"): extract_response.rfind("}")+1])["drug_names"]
         return extracted_drug_names
     
     
     def get_responder_output(self, isImage : bool , image_source : str = None , query : str = ""):
         extracted_drug_names_list = self.drug_extractor(isImage, image_source, query)
+        logger.info(f"Extracted drug names: {extracted_drug_names_list}")
         drug_infos, interaction_infos = self.complete_graphrag_search(extracted_drug_names_list)
         user_prompt = self.get_drugInfo_userPrompt(drug_infos, interaction_infos)
+        logger.info(f"Drug Info User Prompt: {user_prompt}")
         messages=[
             {"role": "system", "content": "You are a helpful clinical assistant."},
             {"role": "user", "content": user_prompt}
         ]
 
-        response = get_sambanova_response(messages, model = DRUG_INFO_MODEL_NAME)
-
+        response = get_sambanova_response(messages, model = settings.DRUG_INFO_MODEL_NAME)
+        logger.info(f"Drug Responder Output: {response}")
         return response
     
 # medical_agent = MedicalAgent()
